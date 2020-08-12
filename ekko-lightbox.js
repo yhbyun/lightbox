@@ -12,6 +12,7 @@ const Lightbox = (($) => {
 		wrapping: true, //if true, gallery loops infinitely
 		type: null, //force the lightbox into image / youtube mode. if null, or not image|youtube|vimeo; detect it
 		alwaysShowClose: false, //always show the close button, even if there is no title
+		showArrowsOnVideo: true, // show arrows when playing video
 		loadingMessage: '<div class="ekko-lightbox-loader"><div><div></div><div></div></div></div>', // http://tobiasahlin.com/spinkit/
 		leftArrow: '<span>&#10094;</span>',
 		rightArrow: '<span>&#10095;</span>',
@@ -450,7 +451,7 @@ const Lightbox = (($) => {
 			$containerForElement.html(`<iframe width="${width}" height="${height}" src="${id}embed/" frameborder="0" allowfullscreen></iframe>`);
 			this._resize(width, height);
 			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows) //hide the arrows when showing video
+			if (this._$modalArrows && !this._config.showArrowsOnVideo) //hide the arrows when showing video
 				this._$modalArrows.css('display', 'none');
 			this._toggleLoading(false);
 			return this;
@@ -461,12 +462,12 @@ const Lightbox = (($) => {
 			$containerForElement.html(`<div class="embed-responsive embed-responsive-16by9"><iframe width="${width}" height="${height}" src="${url}" frameborder="0" allowfullscreen class="embed-responsive-item"></iframe></div>`);
 			this._resize(width, height);
 			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows)
+			if (this._$modalArrows && !this._config.showArrowsOnVideo)
 				this._$modalArrows.css('display', 'none'); //hide the arrows when showing video
 			this._toggleLoading(false);
 			return this;
 		}
-                
+
 		_showHtml5Media(url, $containerForElement) { // should be used for videos only. for remote content use loadRemoteContent (data-type=url)
 			let contentType = this._getRemoteContentType(url);
 			if(!contentType){
@@ -483,7 +484,7 @@ const Lightbox = (($) => {
 			$containerForElement.html(`<div class="embed-responsive embed-responsive-16by9"><${mediaType} width="${width}" height="${height}" preload="auto" autoplay controls class="embed-responsive-item"><source src="${url}" type="${contentType}">${this._config.strings.type}</${mediaType}></div>`);
 			this._resize(width, height);
 			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows)
+			if (this._$modalArrows && !this._config.showArrowsOnVideo)
 				this._$modalArrows.css('display', 'none'); //hide the arrows when showing video
 			this._toggleLoading(false);
 			return this;
@@ -508,7 +509,8 @@ const Lightbox = (($) => {
 				this._config.onContentLoaded.call(this);
 			}
 
-			if (this._$modalArrows) //hide the arrows when remote content
+			if (this._$modalArrows && !this._config.showArrowsOnVideo)
+			//if (this._$modalArrows) //hide the arrows when remote content
 				this._$modalArrows.css('display', 'none')
 
 			this._resize(width, height);
