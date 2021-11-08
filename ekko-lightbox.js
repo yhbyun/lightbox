@@ -4,14 +4,20 @@ const Lightbox = (($) => {
 	const JQUERY_NO_CONFLICT = $.fn[NAME]
 
 	const Default = {
+		modalId: null,
 		title: '',
 		footer: '',
+		message: '',
+		remote: null,
+		width: null,
+		height: null,
 		maxWidth: 9999,
 		maxHeight: 9999,
 		showArrows: true, //display the left / right arrows or not
 		wrapping: true, //if true, gallery loops infinitely
 		type: null, //force the lightbox into image / youtube mode. if null, or not image|youtube|vimeo; detect it
 		alwaysShowClose: false, //always show the close button, even if there is no title
+		disableExternalCheck: false, //Force the lightbox loading into an iframe.
 		loadingMessage: '<div class="ekko-lightbox-loader"><div><div></div><div></div></div></div>', // http://tobiasahlin.com/spinkit/
 		leftArrow: '<span>&#10094;</span>',
 		rightArrow: '<span>&#10095;</span>',
@@ -75,17 +81,18 @@ const Lightbox = (($) => {
 			this._touchstartX = 0
 			this._touchendX = 0
 
-			this._modalId = `ekkoLightbox-${Math.floor((Math.random() * 1000) + 1)}`;
+			this._modalId = this._config.modalId || `ekkoLightbox-${Math.floor((Math.random() * 1000) + 1)}`;
+			this._iframeId = `${this._modalId}-iframe`;
 			this._$element = $element instanceof jQuery ? $element : $($element)
 
 			this._isBootstrap3 = $.fn.modal.Constructor.VERSION[0] == 3;
 
 			let h4 = `<h4 class="modal-title">${this._config.title || "&nbsp;"}</h4>`;
-			let btn = `<button type="button" class="close" data-dismiss="modal" aria-label="${this._config.strings.close}"><span aria-hidden="true">&times;</span></button>`;
+			let btn = `<button type="button" class="close-button close" data-dismiss="modal" aria-label="${this._config.strings.close}"><span aria-hidden="true"></span></button>`;
 
-			let header = `<div class="modal-header${this._config.title || this._config.alwaysShowClose ? '' : ' hide'}">`+(this._isBootstrap3 ? btn+h4 : h4+btn)+`</div>`;
+			let header = this._config.title ? `<div class="modal-header">`+(this._isBootstrap3 ? btn+h4 : h4+btn)+`</div>` : '';
 			let footer = `<div class="modal-footer${this._config.footer ? '' : ' hide'}">${this._config.footer || "&nbsp;"}</div>`;
-			let body = '<div class="modal-body"><div class="ekko-lightbox-container"><div class="ekko-lightbox-item fade in show"></div><div class="ekko-lightbox-item fade"></div></div></div>'
+			let body = `<div class="modal-body">${this._config.title ? '' : btn}<div class="ekko-lightbox-container"><div class="ekko-lightbox-item fade in show"></div><div class="ekko-lightbox-item fade"></div></div></div>`
 			let dialog = `<div class="modal-dialog" role="document"><div class="modal-content">${header}${body}${footer}</div></div>`
 			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox modal fade" tabindex="-1" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
 
@@ -141,7 +148,7 @@ const Lightbox = (($) => {
 				this._$modal.remove()
 				return this._config.onHidden.call(this)
 			})
-			.modal(this._config)
+			.modal($.extend({}, this._config, { remote: null })) // remote는 bs에도 존재하는 옵션. bs 자체가 remote를 로드하지 않도록 함.
 
 			$(window).on('resize.ekkoLightbox', () => {
 				this._resize(this._wantedWidth, this._wantedHeight)
@@ -314,10 +321,17 @@ const Lightbox = (($) => {
 			let $toUse = this._containerToUse()
 			this._updateTitleAndFooter()
 
-			let currentRemote = this._$element.attr('data-remote') || this._$element.attr('href')
-			let currentType = this._detectRemoteType(currentRemote, this._$element.attr('data-type') || false)
+			let currentRemote, currentType;
+			let message = this._config.message || null;
+			if (message) {
+				currentRemote = message;
+				currentType = 'html';
+			} else {
+				currentRemote = this._config.remote || this._$element.attr('data-remote') || this._$element.attr('href')
+				currentType = this._detectRemoteType(currentRemote, this._$element.attr('data-type') || false)
+			}
 
-			if(['image', 'youtube', 'vimeo', 'instagram', 'media', 'url'].indexOf(currentType) < 0)
+			if(['image', 'youtube', 'vimeo', 'instagram', 'media', 'url', 'html'].indexOf(currentType) < 0)
 				return this._error(this._config.strings.type)
 
 			switch(currentType) {
@@ -336,6 +350,9 @@ const Lightbox = (($) => {
 					break;
 				case 'media':
 					this._showHtml5Media(currentRemote, $toUse);
+					break;
+				case 'html':
+					this._showHtml(currentRemote, $toUse);
 					break;
 				default: // url
 					this._loadRemoteContent(currentRemote, $toUse);
@@ -401,8 +418,8 @@ const Lightbox = (($) => {
 		}
 
 		_updateTitleAndFooter() {
-			let title = this._$element.data('title') || ""
-			let caption = this._$element.data('footer') || ""
+			let title = this._config.title || this._$element.data('title') || ""
+			let caption = this._config.footer || this._$element.data('footer') || ""
 
 			this._titleIsShown = false
 			if (title || this._config.alwaysShowClose) {
@@ -448,25 +465,17 @@ const Lightbox = (($) => {
 			let height = width + 80;
 			id = id.substr(-1) !== '/' ? id + '/' : id; // ensure id has trailing slash
 			$containerForElement.html(`<iframe width="${width}" height="${height}" src="${id}embed/" frameborder="0" allowfullscreen></iframe>`);
-			this._resize(width, height);
-			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows) //hide the arrows when showing video
-				this._$modalArrows.css('display', 'none');
-			this._toggleLoading(false);
+			this._afterSetContent(width, height);
 			return this;
 		}
 
 		_showVideoIframe(url, width, height, $containerForElement) { // should be used for videos only. for remote content use loadRemoteContent (data-type=url)
 			height = height || width; // default to square
 			$containerForElement.html(`<div class="embed-responsive embed-responsive-16by9"><iframe width="${width}" height="${height}" src="${url}" frameborder="0" allowfullscreen class="embed-responsive-item"></iframe></div>`);
-			this._resize(width, height);
-			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows)
-				this._$modalArrows.css('display', 'none'); //hide the arrows when showing video
-			this._toggleLoading(false);
+			this._afterSetContent(width, height);
 			return this;
 		}
-                
+
 		_showHtml5Media(url, $containerForElement) { // should be used for videos only. for remote content use loadRemoteContent (data-type=url)
 			let contentType = this._getRemoteContentType(url);
 			if(!contentType){
@@ -481,20 +490,24 @@ const Lightbox = (($) => {
 			let width = this._$element.data('width') || 560
 			let height = this._$element.data('height') ||  width / ( 560/315 )
 			$containerForElement.html(`<div class="embed-responsive embed-responsive-16by9"><${mediaType} width="${width}" height="${height}" preload="auto" autoplay controls class="embed-responsive-item"><source src="${url}" type="${contentType}">${this._config.strings.type}</${mediaType}></div>`);
-			this._resize(width, height);
-			this._config.onContentLoaded.call(this);
-			if (this._$modalArrows)
-				this._$modalArrows.css('display', 'none'); //hide the arrows when showing video
-			this._toggleLoading(false);
+			this._afterSetContent(width, height);
+			return this;
+		}
+
+		_showHtml(html, $containerForElement) {
+			let width = this._config.width || this._$element.data('width') || 560;
+			let height = this._config.height || this._$element.data('height') || 560;
+
+			$containerForElement.html(html);
+			this._afterSetContent(width, height);
 			return this;
 		}
 
 		_loadRemoteContent(url, $containerForElement) {
-			let width = this._$element.data('width') || 560;
-			let height = this._$element.data('height') || 560;
+			let width = this._config.width || this._$element.data('width') || 560;
+			let height = this._config.height || this._$element.data('height') || 560;
 
-			let disableExternalCheck = this._$element.data('disableExternalCheck') || false;
-			this._toggleLoading(false);
+			let disableExternalCheck = this._config.disableExternalCheck || this._$element.data('disableExternalCheck') || false;
 
 			// external urls are loading into an iframe
 			// local ajax can be loaded into the container itself
@@ -502,16 +515,25 @@ const Lightbox = (($) => {
 				$containerForElement.load(url, $.proxy(() => {
 					return this._$element.trigger('loaded.bs.modal');
 				}));
-
+				this._afterSetContent(width, height);
 			} else {
-				$containerForElement.html(`<iframe src="${url}" frameborder="0" allowfullscreen></iframe>`);
-				this._config.onContentLoaded.call(this);
+				$containerForElement.html(`<iframe id="${this._iframeId}" src="${url}" frameborder="0" allowfullscreen></iframe>`);
+
+				if (this._isExternal(url)) {
+					setTimeout(() => {
+						this._afterSetContent(width, height);
+					}, 500);
+				} else {
+					let contentWindow = document.getElementById(this._iframeId).contentWindow;
+					if (contentWindow) {
+						// 동일 도메인에서만 동작
+						contentWindow.addEventListener("DOMContentLoaded", () => {
+							this._afterSetContent(width, height);
+						}, true);
+					}
+				}
 			}
 
-			if (this._$modalArrows) //hide the arrows when remote content
-				this._$modalArrows.css('display', 'none')
-
-			this._resize(width, height);
 			return this;
 		}
 
@@ -527,6 +549,14 @@ const Lightbox = (($) => {
 				return true;
 
 			return false;
+		}
+
+		_afterSetContent(width, height) {
+			this._resize(width, height);
+			this._config.onContentLoaded.call(this);
+			if (this._$modalArrows)
+				this._$modalArrows.css('display', 'none'); //hide the arrows when showing video
+			this._toggleLoading(false);
 		}
 
 		_error( message ) {
