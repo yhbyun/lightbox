@@ -18,6 +18,7 @@ const Lightbox = (($) => {
 		type: null, //force the lightbox into image / youtube mode. if null, or not image|youtube|vimeo; detect it
 		alwaysShowClose: false, //always show the close button, even if there is no title
 		disableExternalCheck: false, //Force the lightbox loading into an iframe.
+		resize: false, // don't resize popup on window resize
 		loadingMessage: '<div class="ekko-lightbox-loader"><div><div></div><div></div></div></div>', // http://tobiasahlin.com/spinkit/
 		leftArrow: '<span>&#10094;</span>',
 		rightArrow: '<span>&#10095;</span>',
@@ -151,7 +152,11 @@ const Lightbox = (($) => {
 			.modal($.extend({}, this._config, { remote: null })) // remote는 bs에도 존재하는 옵션. bs 자체가 remote를 로드하지 않도록 함.
 
 			$(window).on('resize.ekkoLightbox', () => {
-				this._resize(this._wantedWidth, this._wantedHeight)
+				let resize = this._config.resize || this._$element.data('resize') || false;
+
+				if (resize) {
+					this._resize(this._wantedWidth, this._wantedHeight)
+				}
 			})
 			this._$lightboxContainer
 			.on('touchstart', () => {
