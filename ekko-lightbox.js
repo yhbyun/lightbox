@@ -13,6 +13,7 @@ const Lightbox = (($) => {
 		height: null,
 		maxWidth: 9999,
 		maxHeight: 9999,
+		imageClass: 'img-fluid',
 		showArrows: true, //display the left / right arrows or not
 		wrapping: true, //if true, gallery loops infinitely
 		type: null, //force the lightbox into image / youtube mode. if null, or not image|youtube|vimeo; detect it
@@ -606,10 +607,10 @@ const Lightbox = (($) => {
 					loadingTimeout = null;
 					let image = $('<img />');
 					image.attr('src', img.src);
-					image.addClass('img-fluid');
+					image.addClass(this._config.imageClass);
 
 					// backward compatibility for bootstrap v3
-					image.css('width', '100%');
+					// image.css('width', '100%');
 
 					$containerForImage.html(image);
 					if (this._$modalArrows)
