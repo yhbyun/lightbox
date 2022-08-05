@@ -13,3 +13,11 @@ Copyright and license
 ----
 
 Code released under [the MIT license](https://github.com/ashleydw/lightbox/blob/master/LICENSE).
+
+### how to build
+
+```sh
+yarn build
+cp dist/ekko-lightbox.js dist/ekko-lightbox.min.js
+rm dist/*.map
+```
