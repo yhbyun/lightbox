@@ -251,6 +251,16 @@ const Lightbox = (($) => {
 			}
 		}
 
+		setContent(html) {
+			let $toUse = this._$lightboxBodyTwo;
+
+			if (this._$lightboxBodyOne.hasClass('in')) {
+				$toUse = this._$lightboxBodyOne
+			}
+
+			this._showHtml(html, $toUse);
+		}
+
 		close() {
 			return this._$modal.modal('hide');
 		}
