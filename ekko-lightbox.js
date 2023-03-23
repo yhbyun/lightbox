@@ -648,6 +648,24 @@ const Lightbox = (($) => {
 			this._wantedWidth = width
 			this._wantedHeight = height
 
+			if (height === 'auto') {
+				if (width !== 'auto') {
+					this._$modalDialog.css('flex', 1).css('maxWidth', width);
+
+					let modal = this._$modal.data('bs.modal');
+					if (modal) {
+						// v4 method is mistakenly protected
+						try {
+							modal._handleUpdate();
+						} catch(Exception) {
+							modal.handleUpdate();
+						}
+					}
+				}
+
+				return this;
+			}
+
 			let imageAspecRatio = width / height;
 
 			// if width > the available space, scale down the expected width and height
