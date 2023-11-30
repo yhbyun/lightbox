@@ -23,6 +23,7 @@ const Lightbox = (($) => {
 		alwaysShowClose: false, //always show the close button, even if there is no title
 		disableExternalCheck: false, //Force the lightbox loading into an iframe.
 		resize: false, // don't resize popup on window resize
+		showLoader: true, // display loader
 		loadingMessage: '<div class="ekko-lightbox-loader"><div><div></div><div></div></div></div>', // http://tobiasahlin.com/spinkit/
 		leftArrow: '<span>&#10094;</span>',
 		rightArrow: '<span>&#10095;</span>',
@@ -102,6 +103,7 @@ const Lightbox = (($) => {
 			let fade = this._$element.data('fade') === 'false' ? false : this._config.fade;
 			let fadeInUp = this._$element.data('fade-in-up') === 'false' ? false : this._config.fadeInUp;
 			this._config.fadeInUp = fadeInUp;
+			this._config.showLoader = this._$element.data('show-loader') === 'false' ? false : this._config.showLoader;
 			let containerClass = this._$element.data('container-class') || this._config.containerClass;
 			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : (fadeInUp ? ' fade-in-up' : '')) + `" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
 
@@ -414,7 +416,9 @@ const Lightbox = (($) => {
 			if(show) {
 				this._$modalDialog.css('display', 'none')
 				this._$modal.removeClass('in show')
-				$('.modal-backdrop').append(this._config.loadingMessage)
+				if (this._config.showLoader) {
+					$('.modal-backdrop').append(this._config.loadingMessage)
+				}
 			}
 			else {
 				this._$modalDialog.css('display', 'block')
@@ -428,7 +432,9 @@ const Lightbox = (($) => {
 					this._$modal.addClass('in show')
 				}
 
-				$('.modal-backdrop').find('.ekko-lightbox-loader').remove()
+				if (this._config.showLoader) {
+					$('.modal-backdrop').find('.ekko-lightbox-loader').remove()
+				}
 			}
 			return this;
 		}
