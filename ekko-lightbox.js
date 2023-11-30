@@ -100,11 +100,14 @@ const Lightbox = (($) => {
 			let footer = `<div class="modal-footer${this._config.footer ? '' : ' hide'}">${this._config.footer || "&nbsp;"}</div>`;
 			let body = `<div class="modal-body">${this._config.title ? '' : btn}<div class="ekko-lightbox-container"><div class="ekko-lightbox-item fade in show"></div><div class="ekko-lightbox-item fade"></div></div></div>`
 			let dialog = `<div class="modal-dialog" role="document"><div class="modal-content">${header}${body}${footer}</div></div>`
-			let fade = this._$element.data('fade') === 'false' ? false : this._config.fade;
-			let fadeInUp = this._$element.data('fade-in-up') === 'false' ? false : this._config.fadeInUp;
+
+			// 댜음 4개의 키에 대해서만 config보다 element data attribute를 우선한다.
+			let fade = this._toBoolean(this._$element.data('fade'), this._config.fade);
+			let fadeInUp = this._toBoolean(this._$element.data('fade-in-up'), this._config.fadeInUp);
 			this._config.fadeInUp = fadeInUp;
-			this._config.showLoader = this._$element.data('show-loader') === 'false' ? false : this._config.showLoader;
+			this._config.showLoader = this._toBoolean(this._$element.data('show-loader'), this._config.showLoader);
 			let containerClass = this._$element.data('container-class') || this._config.containerClass;
+
 			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : (fadeInUp ? ' fade-in-up' : '')) + `" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
 
 			this._$modal = $(`#${this._modalId}`, this._config.doc)
@@ -756,6 +759,16 @@ const Lightbox = (($) => {
 				}
 			}
 			return this;
+		}
+
+		_toBoolean(value, defautValue) {
+			if (value === 'false') {
+				return false;
+			} else if (value === 'true') {
+				return true;
+			}
+
+			return defautValue;
 		}
 
 		static _jQueryInterface(config) {
