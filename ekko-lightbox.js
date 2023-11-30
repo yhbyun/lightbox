@@ -16,6 +16,7 @@ const Lightbox = (($) => {
 		containerClass: '',
 		imageClass: 'img-fluid',
 		fade: true, //if true, use fade effect
+		fadeInUp: false, // if true, use fade in from bottom. cannot use with fade
 		showArrows: true, //display the left / right arrows or not
 		wrapping: true, //if true, gallery loops infinitely
 		type: null, //force the lightbox into image / youtube mode. if null, or not image|youtube|vimeo; detect it
@@ -99,8 +100,10 @@ const Lightbox = (($) => {
 			let body = `<div class="modal-body">${this._config.title ? '' : btn}<div class="ekko-lightbox-container"><div class="ekko-lightbox-item fade in show"></div><div class="ekko-lightbox-item fade"></div></div></div>`
 			let dialog = `<div class="modal-dialog" role="document"><div class="modal-content">${header}${body}${footer}</div></div>`
 			let fade = this._$element.data('fade') === 'false' ? false : this._config.fade;
+			let fadeInUp = this._$element.data('fade-in-up') === 'false' ? false : this._config.fadeInUp;
+			this._config.fadeInUp = fadeInUp;
 			let containerClass = this._$element.data('container-class') || this._config.containerClass;
-			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : '') + `" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
+			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : (fadeInUp ? ' fade-in-up' : '')) + `" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
 
 			this._$modal = $(`#${this._modalId}`, this._config.doc)
 			this._$modalDialog = this._$modal.find('.modal-dialog').first()
@@ -151,7 +154,15 @@ const Lightbox = (($) => {
 					$(document).off('keydown.ekkoLightbox')
 					$(window).off('resize.ekkoLightbox')
 				}
-				this._$modal.remove()
+
+				if (this._config.fadeInUp) {
+					setTimeout(() => {
+						this._$modal.remove()
+					}, 300);
+				} else {
+					this._$modal.remove()
+				}
+
 				return this._config.onHidden.call(this)
 			})
 			.modal($.extend({}, this._config, { remote: null })) // remote는 bs에도 존재하는 옵션. bs 자체가 remote를 로드하지 않도록 함.
@@ -407,7 +418,16 @@ const Lightbox = (($) => {
 			}
 			else {
 				this._$modalDialog.css('display', 'block')
-				this._$modal.addClass('in show')
+
+				if (this._config.fadeInUp) {
+					// 이렇게 해야 animation이 동작한다.
+					setTimeout(() => {
+						this._$modal.addClass('in show')
+					}, 1);
+				} else {
+					this._$modal.addClass('in show')
+				}
+
 				$('.modal-backdrop').find('.ekko-lightbox-loader').remove()
 			}
 			return this;
