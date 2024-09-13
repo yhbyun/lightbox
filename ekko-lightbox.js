@@ -108,7 +108,7 @@ const Lightbox = (($) => {
 			this._config.showLoader = this._toBoolean(this._$element.data('show-loader'), this._config.showLoader);
 			let containerClass = this._$element.data('container-class') || this._config.containerClass;
 
-			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : (fadeInUp ? ' fade-in-up' : '')) + `" tabindex="-1" role="dialog" aria-hidden="true">${dialog}</div>`)
+			$(this._config.doc.body).append(`<div id="${this._modalId}" class="ekko-lightbox ${containerClass} fixed top-0 left-0 w-full h-full modal` + (fade ? ' fade' : (fadeInUp ? ' fade-in-up' : '')) + `" tabindex="-1" role="dialog" aria-hidden="false" aria-modal="true">${dialog}</div>`)
 
 			this._$modal = $(`#${this._modalId}`, this._config.doc)
 			this._$modalDialog = this._$modal.find('.modal-dialog').first()
